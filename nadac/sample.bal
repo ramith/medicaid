@@ -1,4 +1,7 @@
+import ballerinax/mysql;
+import ballerinax/mysql.driver as _;
 import ballerina/graphql;
+import ballerina/sql;
 
 # A service representing a network-accessible GraphQL API
 @display {
@@ -7,21 +10,14 @@ import ballerina/graphql;
 }
 service / on new graphql:Listener(8090) {
 
-    # A resource for generating greetings
-    # Example query:
-    # query GreetWorld{ 
-    # greeting(name: "World") 
-    # }
-    # Curl command: 
-    # curl -X POST -H "Content-Type: application/json" -d '{"query": "query GreetWorld{ greeting(name:\"World\") }"}' http://localhost:8090
-    #
-    # + name - the input string name
-    # + return - string name with greeting message or error
-    resource function get greeting(string name) returns string|error {
-        if name is "" {
-            return error("name should not be empty!");
-        }
-        return "Hello, " + name;
+    @display {
+        label: "mysql",
+        id: "mysql-b274841b-8215-48ba-b457-301050d89670"
+    }
+    mysql:Client mysqlEp;
+
+    function init() returns error? {
+        self.mysqlEp = check new (host = dbHost, user = dbUser, password = dbPassword, database = dbName, port = 3306);
     }
 
     resource function get findByNDC(string ndc) returns NADACInfo[]|error {
@@ -29,24 +25,62 @@ service / on new graphql:Listener(8090) {
             return error("ndc should not be empty!");
         }
 
-        NADACInfo[] nadacInfo = [];
+        stream<NADACInfo, sql:Error?> infoStream = self.mysqlEp->query(sqlQuery = `SELECT * FROM nadac WHERE ndc = ${ndc}`);
+        return from NADACInfo info in infoStream
+            select info;
+    }
 
-        return nadacInfo;
+    resource function get findByDescription(string discription) returns NADACInfo[]|error {
+        if discription is "" {
+            return error("discription should not be empty!");
+        }
+
+        stream<NADACInfo, sql:Error?> infoStream = self.mysqlEp->query(sqlQuery = `SELECT * FROM nadac WHERE discription like %${discription}%`);
+        return from NADACInfo info in infoStream
+            select info;
     }
 
 }
 
 type NADACInfo record {
+    @sql:Column {name: "ndc_description"}
     string description;
+
+    @sql:Column {name: "ndc"}
     string ndc;
+
+    @sql:Column {name: "nadac_per_unit"}
     decimal nadac_PerUnit;
+
+    @sql:Column {name: "effective_date"}
     string effectiveDate;
+
+    @sql:Column {name: "pricing_unit"}
     string pricingUnit;
+
+    @sql:Column {name: "pharmacy_type_indicator"}
     string pharmacyTypeIndicator;
+
+    @sql:Column {name: "otc"}
     string oTC;
+
+    @sql:Column {name: "explanation_code"}
     string explanationCode;
+
+    @sql:Column {name: "classification_for_rate_setting"}
     string classificationForRateSetting;
+
+    @sql:Column {name: "corresponding_generic_drug_nadac_per_unit"}
     string correspondingGenericDrugNADACPerUnit;
+
+    @sql:Column {name: "corresponding_generic_drug_effective_date"}
     string CorrespondingGenericDrugEffectiveDate;
+
+    @sql:Column {name: "as_of_date"}
     string asOfDate;
 };
+
+configurable string dbHost = ?;
+configurable string dbUser = ?;
+configurable string dbPassword = ?;
+configurable string dbName = ?;
