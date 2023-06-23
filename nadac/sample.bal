@@ -50,7 +50,7 @@ type NADACInfo record {
     string ndc;
 
     @sql:Column {name: "nadac_per_unit"}
-    decimal nadac_PerUnit;
+    float nadac_PerUnit;
 
     @sql:Column {name: "effective_date"}
     string effectiveDate;
