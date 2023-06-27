@@ -2,6 +2,7 @@ import ballerinax/mysql;
 import ballerinax/mysql.driver as _;
 import ballerina/graphql;
 import ballerina/sql;
+import ballerina/log;
 
 # A service representing a network-accessible GraphQL API
 @display {
@@ -24,20 +25,21 @@ service / on new graphql:Listener(8090) {
         if ndc is "" {
             return error("ndc should not be empty!");
         }
-
+        log:printInfo("find by ndc:", ndc = ndc);
         stream<NADACInfo, sql:Error?> infoStream = self.mysqlEp->query(sqlQuery = `SELECT * FROM nadac WHERE ndc = ${ndc}`);
         return from NADACInfo info in infoStream
             select info;
     }
 
-    resource function get findByDescription(string discription) returns NADACInfo[]|error {
-        if discription is "" {
-            return error("discription should not be empty!");
+    resource function get findByDescription(string description) returns NADACInfo[]|error {
+        if description is "" {
+            return error("description should not be empty!");
         }
 
-        string searchTerm = "%" + discription + "%";
+        string searchTerm = string `%${description}%`;
 
-        stream<NADACInfo, sql:Error?> infoStream = self.mysqlEp->query(sqlQuery = `SELECT * FROM nadac WHERE discription like ${searchTerm}`);
+        log:printInfo("searching for drug description:", searchTerm = searchTerm);
+        stream<NADACInfo, sql:Error?> infoStream = self.mysqlEp->query(sqlQuery = `SELECT * FROM nadac WHERE ndc_description like ${searchTerm}`);
         return from NADACInfo info in infoStream
             select info;
     }
