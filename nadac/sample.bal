@@ -37,7 +37,7 @@ service / on new graphql:Listener(8090) {
 
         string searchTerm = "%" + discription + "%";
 
-        stream<NADACInfo, sql:Error?> infoStream = self.mysqlEp->query(sqlQuery = `SELECT * FROM nadac WHERE ndc_discription like ${searchTerm}`);
+        stream<NADACInfo, sql:Error?> infoStream = self.mysqlEp->query(sqlQuery = `SELECT * FROM nadac WHERE discription like ${searchTerm}`);
         return from NADACInfo info in infoStream
             select info;
     }
