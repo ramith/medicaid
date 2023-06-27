@@ -35,7 +35,9 @@ service / on new graphql:Listener(8090) {
             return error("discription should not be empty!");
         }
 
-        stream<NADACInfo, sql:Error?> infoStream = self.mysqlEp->query(sqlQuery = `SELECT * FROM nadac WHERE ndc_discription like '%${discription}%'`);
+        string searchTerm = "%" + discription + "%";
+
+        stream<NADACInfo, sql:Error?> infoStream = self.mysqlEp->query(sqlQuery = `SELECT * FROM nadac WHERE ndc_discription like ${searchTerm}`);
         return from NADACInfo info in infoStream
             select info;
     }
